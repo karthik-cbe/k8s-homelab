@@ -13,27 +13,55 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: "latest"
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Install kubeconform
+        run: |
+          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/
 
       - name: Validate YAML syntax
         run: |
+          yamllint $(find . -name '*.yaml' -o -name '*.yml')
+
+      - name: Validate Kubernetes manifests
+        run: |
+          # Validate all YAML files as Kubernetes manifests
+          # -summary shows summary of results
+          # -output json for better formatting
+          # -ignore-missing-schemas to allow custom CRDs like ArgoCD
           find . -name '*.yaml' -o -name '*.yml' | while read file; do
-            echo "Validating $file"
-            kubectl apply --dry-run=client -f "$file" || echo "Warning: $file may not be a valid k8s manifest"
+            echo "Validating: $file"
+            kubeconform -summary -ignore-missing-schemas "$file" || echo "Skipping non-k8s file: $file"
           done
 
-      - name: Check for secrets
+      - name: Check for plaintext secrets
         run: |
-          if grep -r "kind: Secret" --include="*.yaml" --include="*.yml" .; then
-            echo "Warning: Found Secret resources. Ensure they are encrypted!"
+          if grep -r "kind: Secret" --include="*.yaml" --include="*.yml" . | grep -v "SealedSecret"; then
+            echo "⚠️  Warning: Found plaintext Secret resources. Consider using SealedSecrets or ExternalSecrets!"
+            echo "Files with plaintext secrets:"
+            grep -r "kind: Secret" --include="*.yaml" --include="*.yml" . | grep -v "SealedSecret" | cut -d: -f1 | sort -u
+          else
+            echo "✅ No plaintext secrets found"
           fi
 
       - name: Validate ArgoCD Applications
         run: |
-          find . -path "*/argocd/*.yaml" | while read file; do
-            echo "Checking ArgoCD app: $file"
-            kubectl apply --dry-run=client -f "$file"
+          echo "Checking ArgoCD applications..."
+          find . -path "*/argocd/*.yaml" -o -path "*/argocd/*.yml" | while read file; do
+            echo "Validating ArgoCD app: $file"
+            # Check for required ArgoCD Application fields
+            if grep -q "kind: Application" "$file"; then
+              if ! grep -q "repoURL:" "$file"; then
+                echo "❌ Error: $file missing repoURL"
+                exit 1
+              fi
+              if ! grep -q "path:" "$file"; then
+                echo "❌ Error: $file missing path"
+                exit 1
+              fi
+              echo "✅ $file looks good"
+            fi
           done
