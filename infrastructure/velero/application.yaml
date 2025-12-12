@@ -1,0 +1,42 @@
+# Velero - Kubernetes backup and disaster recovery
+# IMPORTANT: Configure storage backend (S3, GCS, Azure, etc.) before enabling
+# See: https://velero.io/docs/main/supported-providers/
+#
+# Uncomment and configure after setting up storage backend:
+#
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: velero
+#   namespace: argocd
+# spec:
+#   project: default
+#   source:
+#     repoURL: https://vmware-tanzu.github.io/helm-charts
+#     chart: velero
+#     targetRevision: 8.3.0
+#     helm:
+#       values: |
+#         configuration:
+#           backupStorageLocation:
+#           - name: default
+#             provider: aws  # or gcp, azure
+#             bucket: my-backup-bucket
+#             config:
+#               region: us-east-1
+#         credentials:
+#           useSecret: true
+#           secretContents:
+#             cloud: |
+#               [default]
+#               aws_access_key_id=YOUR_ACCESS_KEY
+#               aws_secret_access_key=YOUR_SECRET_KEY
+#   destination:
+#     server: https://kubernetes.default.svc
+#     namespace: velero
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true

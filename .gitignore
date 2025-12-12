@@ -1,0 +1,28 @@
+# Sensitive files
+*.key
+*.pem
+*.crt
+*-secret.yaml
+!*sealed-secret.yaml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.bak
+*.log
+
+# Backups directory
+backups/
+
+# Local testing
+test/
+scratch/
