@@ -1,0 +1,39 @@
+name: Validate Kubernetes Manifests
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "latest"
+
+      - name: Validate YAML syntax
+        run: |
+          find . -name '*.yaml' -o -name '*.yml' | while read file; do
+            echo "Validating $file"
+            kubectl apply --dry-run=client -f "$file" || echo "Warning: $file may not be a valid k8s manifest"
+          done
+
+      - name: Check for secrets
+        run: |
+          if grep -r "kind: Secret" --include="*.yaml" --include="*.yml" .; then
+            echo "Warning: Found Secret resources. Ensure they are encrypted!"
+          fi
+
+      - name: Validate ArgoCD Applications
+        run: |
+          find . -path "*/argocd/*.yaml" | while read file; do
+            echo "Checking ArgoCD app: $file"
+            kubectl apply --dry-run=client -f "$file"
+          done
