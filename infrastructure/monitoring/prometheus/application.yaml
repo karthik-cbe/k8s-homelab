@@ -31,6 +31,12 @@ spec:
                     requests:
                       storage: 10Gi
         grafana:
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              url: http://loki-stack:3100
+              access: proxy
+              version: 1
           adminPassword: admin  # CHANGE THIS!
           resources:
             requests:

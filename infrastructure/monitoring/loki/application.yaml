@@ -33,7 +33,10 @@ spec:
               cpu: 200m
               memory: 128Mi
         grafana:
-          enabled: false  # Using grafana from prometheus-stack
+          enabled: false
+          sidecar:
+            datasources:
+              enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
