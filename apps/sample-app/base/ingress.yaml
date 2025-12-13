@@ -4,7 +4,7 @@ metadata:
   name: nginx-demo
   namespace: sample-app
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
   ingressClassName: nginx
@@ -16,10 +16,10 @@ spec:
     - host: demo.example.com
       http:
         paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: nginx-demo
-              port:
-                number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-demo
+                port:
+                  number: 80
