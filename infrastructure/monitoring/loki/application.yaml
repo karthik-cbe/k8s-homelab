@@ -36,7 +36,7 @@ spec:
           enabled: false
           sidecar:
             datasources:
-              enabled: false
+              label: "disabled"
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
